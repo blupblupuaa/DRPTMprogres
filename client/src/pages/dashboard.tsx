@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Sprout, Settings, Cpu } from "lucide-react";
 import StatusCard from "@/components/status-card";
-import TemperatureChart from "@/components/temperature-chart";
 import MultiMetricChart from "@/components/multi-metric-chart";
 import RecentReadings from "@/components/recent-readings";
 import SystemInfo from "@/components/system-info";
@@ -12,10 +11,12 @@ import type { SensorReading, SystemStatus } from "@shared/schema";
 
 export default function Dashboard() {
   const { toast } = useToast();
-  
-  const { data: sensorReadings = [], isLoading: readingsLoading } = useQuery<SensorReading[]>({
+
+  const { data: sensorReadings = [], isLoading: readingsLoading } = useQuery<
+    SensorReading[]
+  >({
     queryKey: ["/api/sensor-readings"],
-    refetchInterval: 60000, // Refresh every minute
+    refetchInterval: 30000, // Refresh every minute
   });
 
   const { data: latestReading } = useQuery<SensorReading | null>({
@@ -50,9 +51,11 @@ export default function Dashboard() {
     return "high";
   };
 
-  const getTemperatureStatus = (temp: number) => getOptimalityStatus(temp, 22, 26);
+  const getTemperatureStatus = (temp: number) =>
+    getOptimalityStatus(temp, 22, 26);
   const getPhStatus = (ph: number) => getOptimalityStatus(ph, 5.5, 6.5);
-  const getTdsLevelStatus = (tds: number) => getOptimalityStatus(tds, 800, 1200);
+  const getTdsLevelStatus = (tds: number) =>
+    getOptimalityStatus(tds, 800, 1200);
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -63,30 +66,29 @@ export default function Dashboard() {
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
                 <Sprout className="h-6 w-6 text-green-600" />
-                <h1 className="text-xl font-semibold text-slate-900">HydroMonitor</h1>
+                <h1 className="text-xl font-semibold text-slate-900">
+                  HydroMonitor
+                </h1>
               </div>
               <div className="hidden md:flex items-center space-x-2 text-sm text-slate-600">
                 <div className="flex items-center space-x-1">
-                  <div className={`w-2 h-2 rounded-full ${
-                    systemStatus?.connectionStatus === 'connected' 
-                      ? 'bg-green-500 animate-pulse' 
-                      : 'bg-red-500'
-                  }`} />
+                  <div
+                    className={`w-2 h-2 rounded-full ${
+                      systemStatus?.connectionStatus === "connected"
+                        ? "bg-green-500 animate-pulse"
+                        : "bg-red-500"
+                    }`}
+                  />
                   <span>
-                    {systemStatus?.connectionStatus === 'connected' 
-                      ? 'Connected to Antares' 
-                      : 'Disconnected from Antares'
-                    }
+                    {systemStatus?.connectionStatus === "connected"
+                      ? "Connected to Antares"
+                      : "Disconnected from Antares"}
                   </span>
                 </div>
               </div>
             </div>
-            
+
             <div className="flex items-center space-x-4">
-              <div className="hidden sm:flex items-center space-x-2 text-sm text-slate-600">
-                <Cpu className="h-4 w-4 text-slate-400" />
-                <span>Raspberry Pi 4B</span>
-              </div>
               <Button
                 variant="outline"
                 size="sm"
@@ -94,9 +96,6 @@ export default function Dashboard() {
                 className="text-green-600 border-green-600 hover:bg-green-50"
               >
                 Sync Data
-              </Button>
-              <Button variant="ghost" size="sm">
-                <Settings className="h-4 w-4" />
               </Button>
             </div>
           </div>
@@ -112,8 +111,16 @@ export default function Dashboard() {
             value={latestReading?.temperature ?? 0}
             unit="°C"
             icon="thermometer"
-            trend={sensorReadings.length >= 2 && latestReading ? latestReading.temperature - sensorReadings[1].temperature : 0}
-            status={latestReading ? getTemperatureStatus(latestReading.temperature) : "unknown"}
+            trend={
+              sensorReadings.length >= 2 && latestReading
+                ? latestReading.temperature - sensorReadings[1].temperature
+                : 0
+            }
+            status={
+              latestReading
+                ? getTemperatureStatus(latestReading.temperature)
+                : "unknown"
+            }
             optimalRange="22-26°C"
           />
 
@@ -122,7 +129,11 @@ export default function Dashboard() {
             value={latestReading?.ph ?? 0}
             unit=""
             icon="flask"
-            trend={sensorReadings.length >= 2 && latestReading ? latestReading.ph - sensorReadings[1].ph : 0}
+            trend={
+              sensorReadings.length >= 2 && latestReading
+                ? latestReading.ph - sensorReadings[1].ph
+                : 0
+            }
             status={latestReading ? getPhStatus(latestReading.ph) : "unknown"}
             optimalRange="5.5-6.5"
           />
@@ -131,21 +142,28 @@ export default function Dashboard() {
             value={latestReading?.tdsLevel ?? 0}
             unit="ppm"
             icon="waves"
-            trend={sensorReadings.length >= 2 && latestReading ? latestReading.tdsLevel - sensorReadings[1].tdsLevel : 0}
-            status={latestReading ? getTdsLevelStatus(latestReading.tdsLevel) : "unknown"}
+            trend={
+              sensorReadings.length >= 2 && latestReading
+                ? latestReading.tdsLevel - sensorReadings[1].tdsLevel
+                : 0
+            }
+            status={
+              latestReading
+                ? getTdsLevelStatus(latestReading.tdsLevel)
+                : "unknown"
+            }
             optimalRange="800-1200 ppm"
           />
         </div>
 
         {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <TemperatureChart data={sensorReadings} isLoading={readingsLoading} />
           <MultiMetricChart data={sensorReadings} isLoading={readingsLoading} />
+          <RecentReadings data={sensorReadings} isLoading={readingsLoading} />
         </div>
 
         {/* Detailed Data Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <RecentReadings data={sensorReadings} isLoading={readingsLoading} />
           <SystemInfo systemStatus={systemStatus} />
         </div>
       </main>
@@ -155,14 +173,7 @@ export default function Dashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col sm:flex-row items-center justify-between space-y-2 sm:space-y-0">
             <div className="text-sm text-slate-600">
-              © 2024 HydroMonitor - Raspberry Pi Hydroponic System
-            </div>
-            <div className="flex items-center space-x-4 text-sm text-slate-500">
-              <span>v1.2.0</span>
-              <span>•</span>
-              <a href="#" className="hover:text-slate-700 transition-colors">Documentation</a>
-              <span>•</span>
-              <a href="#" className="hover:text-slate-700 transition-colors">Support</a>
+              © 2025 HydroMonitor - DRPTM Hydroponic System
             </div>
           </div>
         </div>
