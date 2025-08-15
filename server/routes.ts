@@ -1,7 +1,10 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertSensorReadingSchema, insertAlertSettingsSchema } from "@shared/schema";
+import {
+  insertSensorReadingSchema,
+  insertAlertSettingsSchema,
+} from "@shared/schema";
 import { antaresService } from "./services/antares";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -21,11 +24,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/sensor-readings/range", async (req, res) => {
     try {
       const { startTime, endTime } = req.query;
-      
+
       if (!startTime || !endTime) {
-        return res.status(400).json({ error: "startTime and endTime are required" });
+        return res
+          .status(400)
+          .json({ error: "startTime and endTime are required" });
       }
-      
+
       const readings = await storage.getSensorReadingsByTimeRange(
         startTime as string,
         endTime as string
@@ -65,22 +70,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/sync-antares", async (req, res) => {
     try {
       const antaresData = await antaresService.fetchLatestData();
-      
+
       if (!antaresData) {
-        await storage.updateSystemStatus({ connectionStatus: 'error' });
-        return res.status(503).json({ error: "Failed to fetch data from Antares API" });
+        await storage.updateSystemStatus({ connectionStatus: "error" });
+        return res
+          .status(503)
+          .json({ error: "Failed to fetch data from Antares API" });
       }
 
       const reading = await storage.createSensorReading(antaresData);
-      await storage.updateSystemStatus({ 
-        connectionStatus: 'connected',
-        lastUpdate: new Date().toISOString()
+      await storage.updateSystemStatus({
+        connectionStatus: "connected",
+        lastUpdate: new Date().toISOString(),
       });
-      
+
       res.json({ success: true, reading });
     } catch (error) {
       console.error("Error syncing with Antares:", error);
-      await storage.updateSystemStatus({ connectionStatus: 'error' });
+      await storage.updateSystemStatus({ connectionStatus: "error" });
       res.status(500).json({ error: "Failed to sync with Antares API" });
     }
   });
@@ -122,8 +129,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Export sensor data
   app.get("/api/export-data", async (req, res) => {
     try {
-      const { format = 'json', startTime, endTime } = req.query;
-      
+      const { format = "json", startTime, endTime } = req.query;
+
       let readings;
       if (startTime && endTime) {
         readings = await storage.getSensorReadingsByTimeRange(
@@ -134,18 +141,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         readings = await storage.getSensorReadings(1000); // Export last 1000 readings
       }
 
-      if (format === 'csv') {
-        const csvHeaders = 'timestamp,temperature,ph,tdsLevel\n';
-        const csvData = readings.map(r => 
-          `${r.timestamp},${r.temperature},${r.ph},${r.tdsLevel}`
-        ).join('\n');
-        
-        res.setHeader('Content-Type', 'text/csv');
-        res.setHeader('Content-Disposition', 'attachment; filename=sensor-data.csv');
+      if (format === "csv") {
+        const csvHeaders = "timestamp,temperature,ph,tdsLevel\n";
+        const csvData = readings
+          .map((r) => `${r.timestamp},${r.temperature},${r.ph},${r.tdsLevel}`)
+          .join("\n");
+
+        res.setHeader("Content-Type", "text/csv");
+        res.setHeader(
+          "Content-Disposition",
+          "attachment; filename=sensor-data.csv"
+        );
         res.send(csvHeaders + csvData);
       } else {
-        res.setHeader('Content-Type', 'application/json');
-        res.setHeader('Content-Disposition', 'attachment; filename=sensor-data.json');
+        res.setHeader("Content-Type", "application/json");
+        res.setHeader(
+          "Content-Disposition",
+          "attachment; filename=sensor-data.json"
+        );
         res.json(readings);
       }
     } catch (error) {
@@ -162,18 +175,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const antaresData = await antaresService.fetchLatestData();
       if (antaresData) {
         await storage.createSensorReading(antaresData);
-        await storage.updateSystemStatus({ 
-          connectionStatus: 'connected',
-          lastUpdate: new Date().toISOString()
+        await storage.updateSystemStatus({
+          connectionStatus: "connected",
+          lastUpdate: new Date().toISOString(),
         });
       } else {
-        await storage.updateSystemStatus({ connectionStatus: 'error' });
+        await storage.updateSystemStatus({ connectionStatus: "error" });
       }
     } catch (error) {
       console.error("Error in periodic data collection:", error);
-      await storage.updateSystemStatus({ connectionStatus: 'error' });
+      await storage.updateSystemStatus({ connectionStatus: "error" });
     }
-  }, 300000); // Collect data every 5 minutes
+  }, 10000); // Collect data every 10 seconds
 
   return httpServer;
 }
